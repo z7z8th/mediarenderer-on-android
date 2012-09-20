@@ -1,0 +1,18 @@
+<resources>
+
+    <string name="app_name">MediaRenderer</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">MainActivity</string>
+
+    <string name="service_start">MediaRenderer service start to run &#8230;</string>
+    <string name="mediarenderer_service_notification_id">mediarenderer_service_notification_id</string>
+    <string name="mediarenderer_service_finished">MediaRenderer servide finished</string>
+    
+    <plurals name="session_notification_ticker">
+        <item quantity="one">1 session is about to start.</item>
+        <item quantity="other">%d sessions are about to start.</item>
+    </plurals>
+    
+    
+</resources>
