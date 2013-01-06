@@ -45,6 +45,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -53,6 +56,8 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -349,7 +354,8 @@ public class DefMediaRenderer extends FragmentActivity{
             if (!state.equals(TransportState.NO_MEDIA_PRESENT) ||
                     state.equals(TransportState.STOPPED)) {
 //                MediaRenderer.APP.log(Level.FINE, "Stopping player instance: " + mediaPlayer.getInstanceId());
-                mediaPlayer.stop();
+//                mediaPlayer.stop();
+            	mediaPlayer.endOfMedia();
             }
         }
     }
@@ -367,17 +373,26 @@ public class DefMediaRenderer extends FragmentActivity{
     }
 
     protected Icon createDefaultDeviceIcon() {
-    	return null;
-//        String iconPath = "img/48/mediarenderer.png";
-//        try {
-//            return new Icon(
-//                    "image/png",
-//                    48, 48, 8,
-//                    URI.create("icon.png"),
-//                    MediaRenderer.class.getResourceAsStream(iconPath)
-//            );
-//        } catch (IOException ex) {
-//            throw new RuntimeException("Could not load icon: " + iconPath, ex);
-//        }
+//    	return null;
+//        String iconPath = "mediarenderer.png";
+        BitmapDrawable bitDw = ((BitmapDrawable) getResources().getDrawable(R.drawable.mediarenderer));
+        Bitmap bitmap = bitDw.getBitmap();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] imageInByte = stream.toByteArray();
+        System.out.println("........length......"+imageInByte);
+        ByteArrayInputStream bis = new ByteArrayInputStream(imageInByte);
+        
+        try {
+            return new Icon(
+                    "image/png",
+                    48, 48, 8,
+                    URI.create("icon.png"),
+//                    DefMediaRenderer.class.getResourceAsStream(iconPath)
+                    bis
+            );
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not load icon", ex);
+        }
     }
 }

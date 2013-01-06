@@ -69,4 +69,5 @@ public class DefMediaPlayers extends ConcurrentHashMap<UnsignedIntegerFourBytes,
     protected void onPlayerPaused(DefMediaPlayer player) {
         log.fine("Player is pausing: " + player.getInstanceId());
     }  
+
 }

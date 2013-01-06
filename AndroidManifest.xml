@@ -31,10 +31,8 @@
         </activity>
         
         <activity
-            android:name=".display.ActivityDisplayHandler" >
-        </activity>
-        <activity
-            android:name=".upnp.DefMediaRenderer" >
+            android:name=".upnp.DefMediaRenderer" 
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         </activity>
         
         <receiver android:name=".service.MediaRendererBCR">  

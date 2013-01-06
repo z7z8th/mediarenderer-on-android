@@ -34,7 +34,7 @@ import android.view.ViewGroup;
 import android.widget.MediaController;
 import android.widget.VideoView;
 
-public class DefMediaPlayer extends Fragment {
+public class DefMediaPlayer extends Fragment implements OnCompletionListener{
 	
 	final private static String TAG = "DefMediaPlayer";
 
@@ -66,6 +66,7 @@ public class DefMediaPlayer extends Fragment {
     	mRootView = (ViewGroup) inflater.inflate(R.layout.fragment_videoview, container,false);
     	videoView = (VideoView) mRootView.findViewById(R.id.myvideoview);
     	
+    	videoView.setKeepScreenOn(true);
     	videoView.setOnPreparedListener(new OnPreparedListener(){
     	
     			@Override
@@ -92,6 +93,8 @@ public class DefMediaPlayer extends Fragment {
     	                );
     	            }
     			}});
+    	
+    	videoView.setOnCompletionListener(this);
     	
     	return mRootView;
 	}
@@ -275,14 +278,14 @@ public class DefMediaPlayer extends Fragment {
     
 	public void pause() {
 		Log.d(TAG,"pause is called");
-//		videoView.pause();
+		videoView.pause();
 		
 		transportStateChanged(TransportState.PAUSED_PLAYBACK);
 	}
 
 	public void play() {
-//		videoView.requestFocus();
-//        videoView.start();
+		videoView.requestFocus();
+        videoView.start();
         
 		transportStateChanged(TransportState.PLAYING);
 	}
@@ -290,7 +293,22 @@ public class DefMediaPlayer extends Fragment {
 	public void stop() {
 		// TODO Auto-generated method stub
 		Log.d(TAG,"stopPlayback is called");
-//		videoView.stopPlayback();
+		videoView.stopPlayback();
+		
+		transportStateChanged(TransportState.STOPPED);
+	}
+	
+	public void endOfMedia(){
+		Log.d(TAG,"DefMediaPlayer endOfMedia");
+		getActivity().finish();
+	}
+
+	@Override
+	public void onCompletion(MediaPlayer mp) {
+		Log.d(TAG,"videoView onCompletion");
+//		getActivity().finish();
+
+		videoView.stopPlayback();
 		transportStateChanged(TransportState.STOPPED);
 	}
 

@@ -24,7 +24,6 @@ public class DisplayHandler extends Handler{
 	public final static int PLAYING = 1;
 	public final static int STOPPED = 2;
 	public final static int PAUSED = 3;
-	public final static int SEEKING = 4;
 	 
 	public DisplayHandler(DefMediaRenderer a){
 	  this.MainActivity = a;
@@ -79,12 +78,11 @@ public class DisplayHandler extends Handler{
 			break;
 		case PLAYING:
 			// Playing
-	        try{
+	        /*try{
 	        	videoView.setVisibility(View.VISIBLE);
 	        	
 		        MediaController mediaController = new MediaController(MainActivity);
-		        mediaController.setAnchorView(videoView);
-//		        
+		        mediaController.setAnchorView(videoView);		        
 		        mediaController.setMediaPlayer(videoView);
 //		        // Set video link (mp4 format )
 //		        Uri video = Uri.parse("http://192.168.1.103:5001/get/0$0$0/dingding.mp4");
@@ -93,28 +91,30 @@ public class DisplayHandler extends Handler{
 	        	
 		        videoView.requestFocus();
 		        videoView.start();
+		        
+		        // show 5 seconds and auto-hide
+		        mediaController.show(5000);
 	        }
 	        catch(Exception e){
 	        	e.printStackTrace();
 	        }
-			Log.d("DisplayHandler","DisplayHandler Playing");
+			Log.d("DisplayHandler","DisplayHandler Playing");*/
 			break;
 
 		case STOPPED:
 			// Stopped
-			if (videoView != null){
+			/*if (videoView != null){
 				videoView.stopPlayback();
 				videoView.setVisibility(View.INVISIBLE);
-			}
+			}*/
 			
 			Log.d("DisplayHandler","DisplayHandler Stopped");
 			break;
 		case PAUSED:
-			if (videoView != null){
+			/*if (videoView != null){
 				videoView.pause();
-			}
-			break;
-		case SEEKING:
+				Log.d("DisplayHandler","DisplayHandler PAUSED");
+			}*/
 			break;
 		}
 	}

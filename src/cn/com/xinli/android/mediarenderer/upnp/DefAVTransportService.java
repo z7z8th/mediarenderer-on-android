@@ -218,13 +218,17 @@ public class DefAVTransportService extends AbstractAVTransportService {
                 player.getPipeline().seek(ct);
             }*/
             
-            if (player.isPlaying()){
+            // arg2 is in format of "hh:mm:ss"
+            Log.d(TAG,"seek target = " + arg2);
+            Log.d(TAG,"seek target = " + ModelUtil.fromTimeString(arg2));
+            player.seekTo(((Long)ModelUtil.fromTimeString(arg2)).intValue() * 1000);
+            /*if (player.isPlaying()){
             	player.pause();
             	player.seekTo(Integer.parseInt(arg2));
             	player.play();
             } else {
             	player.seekTo(Integer.parseInt(arg2));
-            }
+            }*/
 
         } catch (IllegalArgumentException ex) {
             throw new AVTransportException(

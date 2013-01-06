@@ -161,12 +161,12 @@ public class MediaRendererService extends Service {
 //		showNotification();
 //		
 //		getApplicationContext().bindService(
-//                new Intent(this, MediaRendererServiceImpl.class),
+//                new Intent(this, MediaRendererServiceImpl.class),upnpService
 //                serviceConnection,
 //                Context.BIND_AUTO_CREATE
 //        );
 		
-		 System.setProperty("org.xml.sax.driver","org.xmlpull.v1.sax2.Driver");
+		System.setProperty("org.xml.sax.driver","org.xmlpull.v1.sax2.Driver");
 		
 		Intent intent2 = new Intent();
         intent2.setClass(MediaRendererService.this, DefMediaRenderer.class);
