@@ -5,19 +5,13 @@ import java.net.SocketException;
 import java.util.Collections;
 import java.util.List;
 
-import cn.com.xinli.android.mediarenderer.service.MediaRendererService;
-
+import android.app.Activity;
+import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
 import android.view.Menu;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
@@ -28,16 +22,6 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
-        /*Button close = (Button) findViewById(R.id.close);
-        close.setOnClickListener(new OnClickListener(){
-
-			@Override
-			public void onClick(View v) {
-				Intent serviceIntent = new Intent(MainActivity.this,MediaRendererService.class);
-		    	stopService(serviceIntent);
-				
-			}});*/
         
         // to debug ethernet/wifi interface
         ConnectivityManager connectivityManager =
@@ -65,7 +49,7 @@ public class MainActivity extends Activity {
             }
         } catch (SocketException sx) {
         }
-        
+
     }
 
     @Override

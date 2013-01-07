@@ -1,6 +1,7 @@
 package cn.com.xinli.android.mediarenderer.upnp;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -13,7 +14,9 @@ import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
 import org.fourthline.cling.support.avtransport.AVTransportErrorCode;
 import org.fourthline.cling.support.avtransport.AVTransportException;
 import org.fourthline.cling.support.avtransport.AbstractAVTransportService;
+import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.lastchange.LastChange;
+import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.DeviceCapabilities;
 import org.fourthline.cling.support.model.MediaInfo;
 import org.fourthline.cling.support.model.PlayMode;
@@ -23,6 +26,7 @@ import org.fourthline.cling.support.model.StorageMedium;
 import org.fourthline.cling.support.model.TransportAction;
 import org.fourthline.cling.support.model.TransportInfo;
 import org.fourthline.cling.support.model.TransportSettings;
+import org.fourthline.cling.support.model.item.Item;
 import org.seamless.http.HttpFetch;
 import org.seamless.util.URIUtil;
 
@@ -269,10 +273,12 @@ public class DefAVTransportService extends AbstractAVTransportService {
         }
 
         // TODO: Check mime type of resource against supported types
+        Log.d(TAG,"CurrentURI = " + arg1);
 
         // TODO: DIDL fragment parsing and handling of currentURIMetaData
+        Log.d(TAG,"CurrentURIMetaData = " + arg2);
 
-        getInstance(arg0).setURI(uri);
+        getInstance(arg0).setURI(uri, arg2);
 
 	}
 

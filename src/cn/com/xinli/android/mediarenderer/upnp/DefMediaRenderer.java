@@ -65,6 +65,7 @@ import java.util.logging.Level;
 
 public class DefMediaRenderer extends FragmentActivity{
 
+	public static final String TAG = "DefMediaRenderer";
 	public static final long LAST_CHANGE_FIRING_INTERVAL_MILLISECONDS = 2000;
 
     final protected LocalServiceBinder binder = new AnnotationLocalServiceBinder();
@@ -165,7 +166,6 @@ public class DefMediaRenderer extends FragmentActivity{
 	    	    }
 	    );
         
-
         // The AVTransport just passes the calls on to the backend players
         LocalService<DefAVTransportService> avTransportService = binder.read(DefAVTransportService.class);
         avTransport =
@@ -238,6 +238,15 @@ public class DefMediaRenderer extends FragmentActivity{
                             connectionManagerService
                     }
             );
+            
+            /*// to get mime type
+            ProtocolInfos protocolInfos = connectionManagerService.getManager().getImplementation().getSourceProtocolInfo();
+            for (int i = 0; i < protocolInfos.size(); i++) {
+            	ProtocolInfo protocolInfo = protocolInfos.get(i);
+            	Log.d(TAG,"protocolInfo.getContentFormat() = " + protocolInfo.getContentFormat());
+            	Log.d(TAG,"protocolInfo.getContentFormatMimeType().toString() = " + protocolInfo.getContentFormatMimeType().toString());
+            	
+    		}*/
 
         } catch (ValidationException ex) {
             throw new RuntimeException(ex);
