@@ -9,6 +9,8 @@
     <string name="mediarenderer_service_notification_id">mediarenderer_service_notification_id</string>
     <string name="mediarenderer_service_finished">MediaRenderer servide finished</string>
     
+    <string name="dummy_content">XINLI\nD L N A</string>
+    
     <plurals name="session_notification_ticker">
         <item quantity="one">1 session is about to start.</item>
         <item quantity="other">%d sessions are about to start.</item>

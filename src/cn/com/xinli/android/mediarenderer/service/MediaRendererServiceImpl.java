@@ -5,14 +5,13 @@ import org.fourthline.cling.android.AndroidUpnpServiceConfiguration;
 import org.fourthline.cling.android.AndroidUpnpServiceImpl;
 import org.fourthline.cling.android.AndroidWifiSwitchableRouter;
 import org.fourthline.cling.model.ModelUtil;
-import org.fourthline.cling.model.types.ServiceType;
-import org.fourthline.cling.model.types.UDAServiceType;
 
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.util.Log;
+import cn.com.xinli.android.mediarenderer.UpnpSingleton;
 
 public class MediaRendererServiceImpl extends AndroidUpnpServiceImpl {
+	
+	final static String TAG = "MediaRendererServiceImpl";
 	
 	@Override
     protected AndroidUpnpServiceConfiguration createConfiguration(Object manager) {
@@ -52,7 +51,7 @@ public class MediaRendererServiceImpl extends AndroidUpnpServiceImpl {
 	public void onDestroy() {
 //		super.onDestroy();
 		
-		new Thread(new Runnable(){
+		/*new Thread(new Runnable(){
 
 			@Override
 			public void run() {
@@ -62,7 +61,13 @@ public class MediaRendererServiceImpl extends AndroidUpnpServiceImpl {
 
 				new Shutdown().execute(upnpService);
 				
-			}}).run();
+			}}).run();*/
+		
+		if (!ModelUtil.ANDROID_EMULATOR && isListeningForConnectivityChanges()){
+	  	  	unregisterReceiver(((AndroidWifiSwitchableRouter) upnpService.getRouter()).getBroadcastReceiver());
+		}
+		upnpService.getRegistry().removeDevice(UpnpSingleton.udn);
+		new Shutdown().execute(upnpService);
 	}
 		
 	/**

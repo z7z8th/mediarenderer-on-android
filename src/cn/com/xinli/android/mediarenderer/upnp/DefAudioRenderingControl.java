@@ -19,7 +19,7 @@ public class DefAudioRenderingControl extends AbstractAudioRenderingControl {
 
     final private Map<UnsignedIntegerFourBytes, DefMediaPlayer> players;
 
-    protected DefAudioRenderingControl(LastChange lastChange, Map<UnsignedIntegerFourBytes, DefMediaPlayer> players) {
+    public DefAudioRenderingControl(LastChange lastChange, Map<UnsignedIntegerFourBytes, DefMediaPlayer> players) {
         super(lastChange);
         this.players = players;
     }

@@ -2,4 +2,7 @@
 
     <style name="AppTheme" parent="android:Theme.Light" />
 
+    <style name="Theme.NoTitleBar.Fullscreen.NoBackground" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@null</item>
+    </style>
 </resources>

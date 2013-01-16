@@ -2,8 +2,6 @@ package cn.com.xinli.android.mediarenderer.upnp;
 
 import java.io.IOException;
 
-import javax.crypto.NullCipher;
-
 import cn.com.xinli.android.mediarenderer.R;
 
 import android.app.Activity;

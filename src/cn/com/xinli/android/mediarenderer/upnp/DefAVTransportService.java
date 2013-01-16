@@ -1,7 +1,6 @@
 package cn.com.xinli.android.mediarenderer.upnp;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -14,9 +13,7 @@ import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
 import org.fourthline.cling.support.avtransport.AVTransportErrorCode;
 import org.fourthline.cling.support.avtransport.AVTransportException;
 import org.fourthline.cling.support.avtransport.AbstractAVTransportService;
-import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.lastchange.LastChange;
-import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.DeviceCapabilities;
 import org.fourthline.cling.support.model.MediaInfo;
 import org.fourthline.cling.support.model.PlayMode;
@@ -26,10 +23,10 @@ import org.fourthline.cling.support.model.StorageMedium;
 import org.fourthline.cling.support.model.TransportAction;
 import org.fourthline.cling.support.model.TransportInfo;
 import org.fourthline.cling.support.model.TransportSettings;
-import org.fourthline.cling.support.model.item.Item;
 import org.seamless.http.HttpFetch;
 import org.seamless.util.URIUtil;
 
+import android.content.Context;
 import android.util.Log;
 
 public class DefAVTransportService extends AbstractAVTransportService {
@@ -38,8 +35,7 @@ public class DefAVTransportService extends AbstractAVTransportService {
 	final private static Logger log = Logger.getLogger(DefAVTransportService.class.getName());
 
     final private Map<UnsignedIntegerFourBytes, DefMediaPlayer> players;
-    
-    protected DefAVTransportService(LastChange lastChange, Map<UnsignedIntegerFourBytes, DefMediaPlayer> players) {
+    public DefAVTransportService(LastChange lastChange, Map<UnsignedIntegerFourBytes, DefMediaPlayer> players) {
         super(lastChange);
         this.players = players;
     }
@@ -321,6 +317,7 @@ public class DefAVTransportService extends AbstractAVTransportService {
 	public void stop(
 			@UpnpInputArgument(name = "InstanceID") UnsignedIntegerFourBytes arg0)
 			throws AVTransportException {
+		Log.d(TAG,"stop is called");
 		getInstance(arg0).stop();
 	}
 

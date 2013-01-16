@@ -17,6 +17,7 @@ import org.fourthline.cling.support.model.Channel;
 import org.fourthline.cling.support.model.DIDLContent;
 import org.fourthline.cling.support.model.MediaInfo;
 import org.fourthline.cling.support.model.PositionInfo;
+import org.fourthline.cling.support.model.Res;
 import org.fourthline.cling.support.model.StorageMedium;
 import org.fourthline.cling.support.model.TransportAction;
 import org.fourthline.cling.support.model.TransportInfo;
@@ -26,13 +27,17 @@ import org.fourthline.cling.support.renderingcontrol.lastchange.ChannelMute;
 import org.fourthline.cling.support.renderingcontrol.lastchange.ChannelVolume;
 import org.fourthline.cling.support.renderingcontrol.lastchange.RenderingControlVariable;
 
-import android.app.Activity;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -40,13 +45,21 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.ImageView;
+import android.widget.MediaController;
 import android.widget.VideoView;
 import cn.com.xinli.android.mediarenderer.R;
+import cn.com.xinli.android.mediarenderer.UpnpSingleton;
 
-public class DefMediaPlayer extends Fragment implements OnCompletionListener{
+public class DefMediaPlayer extends Fragment 
+	implements OnPreparedListener, OnErrorListener, OnCompletionListener{
 	
 	final private static String TAG = "DefMediaPlayer";
+	private static final String PACKAGE_NAME = "cn.com.xinli.android.mediarenderer";
+	private static final String ACTIVITY_NAME = "cn.com.xinli.android.mediarenderer.activity.PlayerActivity";
 
     private UnsignedIntegerFourBytes instanceId;
     private LastChange avTransportLastChange;
@@ -65,59 +78,41 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
     private ViewGroup mRootView;
     private VideoView videoView;
     private ImageView imageView;
+    private MediaController mediaController;
     
     private long trackDurationTime;
     
-    final Activity mActivity = this.getActivity();
-
     /* FROM DIDL CONTENT
     <upnp:class>object.item.audioItem.musicTrack</upnp:class>
 	<upnp:class>object.item.videoItem</upnp:class>
 	<upnp:class>object.item.imageItem</upnp:class>
     */
-    final private static String videoType = "object.item.videoItem";
-    final private static String audioType = "object.item.audioItem.musicTrack";
-    final private static String imageType = "object.item.imageItem";
-    private static String upnpItemType = null;
-    private static String upnpItemId = null;
+    private final static String videoTypePrefix = "http-get:*:video/";
+    private final static String audioTypePrefix = "http-get:*:audio/";
+    private final static String imageTypePrefix = "http-get:*:image/";
+    private final static int VIDEOTYPE = 0;
+    private final static int AUDIOTYPE = 1;
+    private final static int IMAGETYPE = 2;
+    private static int upnpItemType = 0;
+    private static String upnpItemId = "temp.jpg";
     
     File cacheDir;
     
-    @Override
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
+		Log.d(TAG, "onCreateView");
+		
     	mRootView = (ViewGroup) inflater.inflate(R.layout.fragment_videoview, container,false);
+    	
     	imageView = (ImageView) mRootView.findViewById(R.id.myimageview);
     	videoView = (VideoView) mRootView.findViewById(R.id.myvideoview);
     	
+		mediaController = new MediaController(getActivity());
+    	
     	videoView.setKeepScreenOn(true);
-    	videoView.setOnPreparedListener(new OnPreparedListener(){
-    	
-    			@Override
-    			public void onPrepared(MediaPlayer mediaPlayer) {
-    				mMediaPlayer = mediaPlayer;
-    				
-    				trackDurationTime = videoView.getDuration();//this returned the duration 
-    				
-    				synchronized (DefMediaPlayer.this) {
-    	                String newValue = ModelUtil.toTimeString(trackDurationTime / 1000);
-    	                currentMediaInfo =
-    	                        new MediaInfo(
-    	                                currentMediaInfo.getCurrentURI(),
-    	                                "",
-    	                                new UnsignedIntegerFourBytes(1),
-    	                                newValue,
-    	                                StorageMedium.NETWORK
-    	                        );
-
-    	                getAvTransportLastChange().setEventedValue(
-    	                        getInstanceId(),
-    	                        new AVTransportVariable.CurrentTrackDuration(newValue),
-    	                        new AVTransportVariable.CurrentMediaDuration(newValue)
-    	                );
-    	            }
-    			}});
-    	
+    	videoView.setOnPreparedListener(this);
+    	videoView.setOnErrorListener(this);
     	videoView.setOnCompletionListener(this);
     	
     	cacheDir = getActivity().getCacheDir();
@@ -152,7 +147,6 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
     }
 
     synchronized public PositionInfo getCurrentPositionInfo() {
-    	Log.d(TAG,"getPositionInfo = " + videoView.getCurrentPosition());
     	
         currentPositionInfo =
                 new PositionInfo(
@@ -180,6 +174,12 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
     }
 
     synchronized public void setURI(final URI uri, final String metaData) {
+
+    	Intent intent = new Intent();
+    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
+    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
+
     	// DIDL fragment parsing and handling of currentURIMetaData
     	DIDLParser parser = new DIDLParser();
         try {
@@ -187,61 +187,105 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
 			List<Item> items = didl.getItems();
 			if (items != null && items.size() > 0){
 				Item itemOne = items.get(0);
-				upnpItemType = itemOne.getClazz().getValue();
+				Res resource = itemOne.getResources().get(0);
 				upnpItemId = itemOne.getTitle();
+				String protocolInfo = resource.getProtocolInfo().toString();
+				if (protocolInfo.startsWith(videoTypePrefix))
+					upnpItemType = VIDEOTYPE;
+				else if(protocolInfo.startsWith(audioTypePrefix))
+					upnpItemType = AUDIOTYPE;
+				else if (protocolInfo.startsWith(imageTypePrefix))
+					upnpItemType = IMAGETYPE;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.d(TAG,"CurrentURIMetaData parse error");
 		}
         
-        // Image show
-        if (upnpItemType.equalsIgnoreCase(imageType)){
-        	getActivity().runOnUiThread(new Runnable(){
+        if (getActivity() == null){
+			Log.d(TAG, "getActivity() is null");
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			setURI(uri,metaData);
+			return;
+		} 
+        
+        // recycle bitmap
+        getActivity().runOnUiThread(new Runnable(){
+
+			@Override
+			public void run() {
+		        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
+				if (bitmapDrawable != null) {
+					Bitmap bitmap = bitmapDrawable.getBitmap();
+					if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
+				}
+			}});
+        
+        switch (upnpItemType) {
+		case VIDEOTYPE:
+			
+			// Video show
+	    	getActivity().runOnUiThread(new Runnable(){
+
+				@Override
+				public void run() {
+					videoView.stopPlayback();
+					videoView.setVisibility(View.VISIBLE);
+		        	imageView.setVisibility(View.INVISIBLE);
+		        	videoView.bringToFront();
+		        	Log.d(TAG,"uri = " + uri.toString());
+			        videoView.setVideoPath(uri.toString());
+			        videoView.setMediaController(mediaController);
+			        videoView.requestFocus();
+				}});
+	    	
+			break;
+
+		case AUDIOTYPE:
+			
+			break;
+			
+		case IMAGETYPE:
+			// Image show
+			getActivity().runOnUiThread(new Runnable(){
         		@Override
 				public void run() {
-        			videoView.setVisibility(View.GONE);
+        			videoView.stopPlayback();
+        			videoView.setVisibility(View.INVISIBLE);
                 	imageView.setVisibility(View.VISIBLE);
+                	imageView.bringToFront();
                 	File bitmapFile = new File(cacheDir, upnpItemId);
                 	Log.d(TAG,"upnpItemId = " + upnpItemId );
                 	Log.d(TAG,"bitmapFile = " + bitmapFile.toString() );
                 	setImage(imageView, uri.toString(), bitmapFile);
         		}
         	});
-			
-        } else if (upnpItemType.equalsIgnoreCase(videoType)) {
-        	
-	        // Video show
-	    	getActivity().runOnUiThread(new Runnable(){
-	
-				@Override
-				public void run() {
-					videoView.setVisibility(View.VISIBLE);
-		        	imageView.setVisibility(View.INVISIBLE);
-			        Uri video = Uri.parse(uri.toString());
-			        videoView.setVideoURI(video);
-				}});
-        }
-    	
+			break;
+		}
+        
     	currentMediaInfo =
                 new MediaInfo(
                 		uri.toString(),
-                        "",
+                		metaData,
                         new UnsignedIntegerFourBytes(1),
                         ModelUtil.toTimeString(trackDurationTime / 1000),
                         StorageMedium.NETWORK
                 );
-        currentPositionInfo = new PositionInfo(1, "", uri.toString());
+        currentPositionInfo = new PositionInfo(1, metaData, uri.toString());
 
         getAvTransportLastChange().setEventedValue(
                 getInstanceId(),
                 new AVTransportVariable.AVTransportURI(uri),
                 new AVTransportVariable.CurrentTrackURI(uri)
         );
-
-        transportStateChanged(TransportState.STOPPED);
+    	
+    	transportStateChanged(TransportState.TRANSITIONING);
     }
-
+    
     synchronized public void setVolume(double volume) {
         storedVolume = getVolume();
         setVolume((float)volume,(float)volume);
@@ -319,50 +363,87 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
     	return videoView.isPlaying();
     }
     
-    public void seekTo(int msec){
-    	videoView.seekTo(msec);
-    	videoView.start();
+    public void seekTo(final int msec){
+    	
+    	getActivity().runOnUiThread(new Runnable(){
+			@Override
+			public void run() {
+				videoView.seekTo(msec);
+		    	videoView.start();
+			}
+		});
+    	
     	transportStateChanged(TransportState.PLAYING);
     }
     
     
 	public void pause() {
 		Log.d(TAG,"pause is called");
-		videoView.pause();
+		
+		getActivity().runOnUiThread(new Runnable(){
+			@Override
+			public void run() {
+				videoView.pause();
+			}
+		});
 		
 		transportStateChanged(TransportState.PAUSED_PLAYBACK);
 	}
 
 	public void play() {
-		if (upnpItemType.equalsIgnoreCase(videoType)) {
-			videoView.requestFocus();
-	        videoView.start();
+		Intent intent = new Intent();
+    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
+    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
+    	
+		if (upnpItemType == VIDEOTYPE) {
 	        
-	        transportStateChanged(TransportState.PLAYING);
+	        getActivity().runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+				    videoView.bringToFront();
+			        videoView.requestFocus();
+			        videoView.start();
+			        
+				    mediaController.show(5000);
+				}
+			});
 		} 
+		
+		transportStateChanged(TransportState.PLAYING);
 	}
 
 	public void stop() {
 		// TODO Auto-generated method stub
-		if (upnpItemType.equalsIgnoreCase(videoType)) {
+		if (upnpItemType == VIDEOTYPE) {
 			Log.d(TAG,"stopPlayback is called");
-			videoView.stopPlayback();
 			
-			transportStateChanged(TransportState.STOPPED);
+			getActivity().runOnUiThread(new Runnable(){
+				@Override
+				public void run() {
+					if (videoView.isPlaying()){ 
+						videoView.stopPlayback();
+						getActivity().moveTaskToBack(true);
+					}
+				}
+			});
 		}
+		
+		transportStateChanged(TransportState.STOPPED);
 	}
 	
 	public void endOfMedia(){
 		Log.d(TAG,"DefMediaPlayer endOfMedia");
-		getActivity().finish();
+		getActivity().moveTaskToBack(true);
 	}
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
 		Log.d(TAG,"videoView onCompletion");
-//		getActivity().finish();
-
-		videoView.stopPlayback();
+//		mp.stop();
+		
+		getActivity().moveTaskToBack(true);
+		
 		transportStateChanged(TransportState.STOPPED);
 	}
 
@@ -428,12 +509,10 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
                     is.close();
                 }
                 return sampledSrcBitmap;
-
             }
 
            @Override
             protected Bitmap doInBackground(Object... params) {
-        	   Log.d("MainActivity","doInBackground is run");
                 view = (ImageView) params[0];
                 url = String.valueOf(params[1]);
                 bitmapFile = (File) params[2];
@@ -457,72 +536,76 @@ public class DefMediaPlayer extends Fragment implements OnCompletionListener{
             }
 
             @Override
-            protected void onPostExecute(Bitmap result) {
+            protected void onPostExecute(final Bitmap result) {
             	super.onPostExecute(result);
-                view.setImageBitmap(result);
-                view.setVisibility(View.VISIBLE);
-                view.bringToFront();
-                view.requestFocus();
-//                progressBar.setVisibility(View.INVISIBLE);
+            	final ImageView view = (ImageView) getActivity().findViewById(R.id.myimageview);
+            	
+            	ObjectAnimator visToInvis = ObjectAnimator.ofFloat(view, "rotationY", 0f, 90f);
+                visToInvis.setDuration(1000);
+                visToInvis.setInterpolator(decelerator);
+                
+                final ObjectAnimator invisToVis = ObjectAnimator.ofFloat(imageView, "rotationY", -90f, 0f);
+                invisToVis.setDuration(1000);
+                invisToVis.setInterpolator(decelerator);
+                
+                visToInvis.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator anim) {
+                    	view.setImageBitmap(result);
+                        view.setVisibility(View.VISIBLE);
+                        view.bringToFront();
+                        view.requestFocus();
+                        invisToVis.start();
+                    }
+                });
+                visToInvis.start();
+                
+//                view.setImageBitmap(result);
+//                view.setVisibility(View.VISIBLE);
+//                view.bringToFront();
+//                view.requestFocus();
+            	
             }
         }
 
         new IntializeViewImageTask().execute(view, url, bitmapFile);
     }
-    /*
-    protected class GstMediaListener implements MediaListener {
 
-        public void pause(StopEvent evt) {
-            transportStateChanged(TransportState.PAUSED_PLAYBACK);
+	@Override
+	public boolean onError(MediaPlayer mp, int what, int extra) {
+		Log.d(TAG,"videoView onError");
+		return false;
+	}
+
+	@Override
+	public void onPrepared(MediaPlayer mp) {
+		Log.d(TAG,"videoView onprepared");
+		Log.d(TAG,"trackDurationTime = " + mp.getDuration() );
+		
+		trackDurationTime = videoView.getDuration();//this returned the duration
+		
+		Log.d(TAG,"trackDurationTime from videoview= " + trackDurationTime );
+		
+		synchronized (DefMediaPlayer.this) {
+            String newValue = ModelUtil.toTimeString(trackDurationTime / 1000);
+            currentMediaInfo =
+                    new MediaInfo(
+                            currentMediaInfo.getCurrentURI(),
+                            "",
+                            new UnsignedIntegerFourBytes(1),
+                            newValue,
+                            StorageMedium.NETWORK
+                    );
+
+            getAvTransportLastChange().setEventedValue(
+                    getInstanceId(),
+                    new AVTransportVariable.CurrentTrackDuration(newValue),
+                    new AVTransportVariable.CurrentMediaDuration(newValue)
+            );
         }
-
-        public void start(StartEvent evt) {
-            transportStateChanged(TransportState.PLAYING);
-        }
-
-        public void stop(StopEvent evt) {
-            transportStateChanged(TransportState.STOPPED);
-        }
-
-        public void endOfMedia(EndOfMediaEvent evt) {
-            log.fine("End Of Media event received, stopping media player backend");
-            GstMediaPlayer.this.stop();
-        }
-
-        public void positionChanged(PositionChangedEvent evt) {
-            log.fine("Position Changed event received: " + evt.getPosition());
-            synchronized (GstMediaPlayer.this) {
-                currentPositionInfo =
-                        new PositionInfo(
-                                1,
-                                currentMediaInfo.getMediaDuration(),
-                                currentMediaInfo.getCurrentURI(),
-                                ModelUtil.toTimeString(evt.getPosition().toSeconds()),
-                                ModelUtil.toTimeString(evt.getPosition().toSeconds())
-                        );
-            }
-        }
-
-        public void durationChanged(final DurationChangedEvent evt) {
-            log.fine("Duration Changed event received: " + evt.getDuration());
-            synchronized (GstMediaPlayer.this) {
-                String newValue = ModelUtil.toTimeString(evt.getDuration().toSeconds());
-                currentMediaInfo =
-                        new MediaInfo(
-                                currentMediaInfo.getCurrentURI(),
-                                "",
-                                new UnsignedIntegerFourBytes(1),
-                                newValue,
-                                StorageMedium.NETWORK
-                        );
-
-                getAvTransportLastChange().setEventedValue(
-                        getInstanceId(),
-                        new AVTransportVariable.CurrentTrackDuration(newValue),
-                        new AVTransportVariable.CurrentMediaDuration(newValue)
-                );
-            }
-        }
-    }*/
+	}
+	
+	private Interpolator accelerator = new AccelerateInterpolator();
+    private Interpolator decelerator = new DecelerateInterpolator();
 	
 }
