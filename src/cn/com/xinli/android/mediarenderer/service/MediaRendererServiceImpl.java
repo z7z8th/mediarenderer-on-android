@@ -7,6 +7,7 @@ import org.fourthline.cling.android.AndroidWifiSwitchableRouter;
 import org.fourthline.cling.model.ModelUtil;
 
 import android.os.AsyncTask;
+import cn.com.xinli.android.mediarenderer.UpnpApp;
 import cn.com.xinli.android.mediarenderer.UpnpSingleton;
 
 public class MediaRendererServiceImpl extends AndroidUpnpServiceImpl {
@@ -66,8 +67,12 @@ public class MediaRendererServiceImpl extends AndroidUpnpServiceImpl {
 		if (!ModelUtil.ANDROID_EMULATOR && isListeningForConnectivityChanges()){
 	  	  	unregisterReceiver(((AndroidWifiSwitchableRouter) upnpService.getRouter()).getBroadcastReceiver());
 		}
-		upnpService.getRegistry().removeDevice(UpnpSingleton.udn);
+		
 		new Shutdown().execute(upnpService);
+		
+		upnpService.getRegistry().removeDevice(UpnpSingleton.udn);
+		UpnpApp application = (UpnpApp)getApplication();
+		application.CancelNotification();
 	}
 		
 	/**

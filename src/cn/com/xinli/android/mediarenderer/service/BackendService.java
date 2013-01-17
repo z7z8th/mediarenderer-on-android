@@ -4,6 +4,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import cn.com.xinli.android.mediarenderer.R;
+import cn.com.xinli.android.mediarenderer.UpnpApp;
 import cn.com.xinli.android.mediarenderer.UpnpSingleton;
 
 /**
@@ -23,6 +25,9 @@ public class BackendService extends Service {
                 UpnpSingleton.getInstance().getServiceConnection(),
                 Context.BIND_AUTO_CREATE
         );
+		
+		UpnpApp application = (UpnpApp)getApplication();
+		application.showNotification(getText(R.string.service_start).toString());
 	}
 
 	@Override

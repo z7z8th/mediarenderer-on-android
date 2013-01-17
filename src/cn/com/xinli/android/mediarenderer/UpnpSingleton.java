@@ -206,6 +206,7 @@ public class UpnpSingleton {
                 if (innerAvTransportService == null){
                 
     	            upnpService.getRegistry().addDevice(device);
+    	            
                 }
                 
             }
