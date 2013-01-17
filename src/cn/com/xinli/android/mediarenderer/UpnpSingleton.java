@@ -35,6 +35,7 @@ import android.content.Context;
 import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
+import android.media.MediaPlayer;
 import android.os.IBinder;
 import android.util.Log;
 import cn.com.xinli.android.mediarenderer.display.DisplayHandler;
@@ -75,6 +76,8 @@ public class UpnpSingleton {
     protected LocalService<DefAudioRenderingControl> renderingControlService;
     
     protected Context applicationContext;
+    
+    protected MediaPlayer mMediaPlayer; // music player
 	
 	public static void initInstance(Context context)
 	{
@@ -240,6 +243,14 @@ public class UpnpSingleton {
 	
 	public Map<UnsignedIntegerFourBytes, DefMediaPlayer> getMediaPlayers(){
 		return mediaPlayers;
+	}
+	
+	public void setMusicMediaPlayer(MediaPlayer mp){
+		this.mMediaPlayer = mp;
+	}
+	
+	public MediaPlayer getMusicMediaPlayer(){
+		return this.mMediaPlayer;
 	}
 	
 	private ServiceConnection serviceConnection;

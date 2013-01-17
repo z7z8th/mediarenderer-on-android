@@ -20,6 +20,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" 
+        android:allowBackup="true"
         android:name="cn.com.xinli.android.mediarenderer.UpnpApp">
         
        <activity
@@ -53,6 +54,14 @@
         </receiver>
 
         <service android:name="cn.com.xinli.android.mediarenderer.service.BackendService" />
+        
+        <service android:name="cn.com.xinli.android.mediarenderer.service.MusicPlayerService" >
+            <intent-filter>
+                <action android:name="cn.com.xinli.android.upnp_music_player" />
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </service>
+        
 
         <!-- Custom AndroidUpnpServiceImpl - see the source -->
         <service android:name="cn.com.xinli.android.mediarenderer.service.MediaRendererServiceImpl" />

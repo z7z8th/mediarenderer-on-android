@@ -62,12 +62,14 @@ public class UpnpApp extends Application {
                                                         R.plurals.session_notification_ticker, 1, 2))
                         .setDefaults(
                                         Notification.DEFAULT_SOUND
-                                                        | Notification.DEFAULT_VIBRATE)
+                                                        | Notification.DEFAULT_VIBRATE )
                         .setLights(NOTIFICATION_ARGB_COLOR, NOTIFICATION_LED_ON_MS,
                                         NOTIFICATION_LED_OFF_MS)
                         .setSmallIcon(R.drawable.mediarenderer)
                         .setContentIntent(contentIntent)
-                        .setWhen(System.currentTimeMillis()).getNotification();
+                        .getNotification();
+        
+        CancelNotification();
 
         // Send the notification.
         // We use a layout id because it is a unique number. We use it later to

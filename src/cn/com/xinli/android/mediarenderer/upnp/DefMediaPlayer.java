@@ -38,6 +38,7 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -148,19 +149,46 @@ public class DefMediaPlayer extends Fragment
 
     synchronized public PositionInfo getCurrentPositionInfo() {
     	
+    	int position = 0;
+    	if (upnpItemType == AUDIOTYPE) {
+    		if (UpnpSingleton.getInstance().getMusicMediaPlayer() != null)
+    			position = UpnpSingleton.getInstance().getMusicMediaPlayer().getCurrentPosition();
+    	} else {
+    		position = videoView.getCurrentPosition();
+    	}
+    	
         currentPositionInfo =
                 new PositionInfo(
                         1,
                         currentMediaInfo.getMediaDuration(),
                         currentMediaInfo.getCurrentURI(),
-                        ModelUtil.toTimeString(videoView.getCurrentPosition()/1000),
-                        ModelUtil.toTimeString(videoView.getCurrentPosition()/1000)
+                        ModelUtil.toTimeString(position/1000),
+                        ModelUtil.toTimeString(position/1000)
                 );
         
         return currentPositionInfo;
     }
 
     synchronized public MediaInfo getCurrentMediaInfo() {
+    	if (upnpItemType == AUDIOTYPE) {
+    		trackDurationTime = UpnpSingleton.getInstance().getMusicMediaPlayer().getDuration();
+    		String newValue = ModelUtil.toTimeString(trackDurationTime / 1000);
+    		currentMediaInfo =
+                    new MediaInfo(
+                            currentMediaInfo.getCurrentURI(),
+                            "",
+                            new UnsignedIntegerFourBytes(1),
+                            newValue,
+                            StorageMedium.NETWORK
+                    );
+    		
+    		getAvTransportLastChange().setEventedValue(
+                    getInstanceId(),
+                    new AVTransportVariable.CurrentTrackDuration(newValue),
+                    new AVTransportVariable.CurrentMediaDuration(newValue)
+            );
+    	}
+    	
         return currentMediaInfo;
     }
     
@@ -174,11 +202,6 @@ public class DefMediaPlayer extends Fragment
     }
 
     synchronized public void setURI(final URI uri, final String metaData) {
-
-    	Intent intent = new Intent();
-    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
-    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
 
     	// DIDL fragment parsing and handling of currentURIMetaData
     	DIDLParser parser = new DIDLParser();
@@ -202,33 +225,39 @@ public class DefMediaPlayer extends Fragment
 			Log.d(TAG,"CurrentURIMetaData parse error");
 		}
         
-        if (getActivity() == null){
-			Log.d(TAG, "getActivity() is null");
-			try {
-				Thread.sleep(200);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			setURI(uri,metaData);
-			return;
-		} 
-        
-        // recycle bitmap
-        getActivity().runOnUiThread(new Runnable(){
-
-			@Override
-			public void run() {
-		        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
-				if (bitmapDrawable != null) {
-					Bitmap bitmap = bitmapDrawable.getBitmap();
-					if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
-				}
-			}});
+        // stop music service firstly
+        UpnpSingleton.getInstance().getApplicationContext().stopService(new Intent("cn.com.xinli.android.upnp_music_player"));
         
         switch (upnpItemType) {
 		case VIDEOTYPE:
+			Intent intent = new Intent();
+	    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
+	    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+	    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
 			
-			// Video show
+	    	if (getActivity() == null){
+				Log.d(TAG, "getActivity() is null");
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				setURI(uri,metaData);
+				return;
+			} 
+	    	
+	        // recycle bitmap
+	        getActivity().runOnUiThread(new Runnable(){
+
+				@Override
+				public void run() {
+			        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
+					if (bitmapDrawable != null) {
+						Bitmap bitmap = bitmapDrawable.getBitmap();
+						if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
+					}
+				}});
+	    	
 	    	getActivity().runOnUiThread(new Runnable(){
 
 				@Override
@@ -246,12 +275,48 @@ public class DefMediaPlayer extends Fragment
 			break;
 
 		case AUDIOTYPE:
+			// in order to play music in background,we need to start music play service
+			// and show track info in notification.
+			// when play completed,change the content to "service is on" rather than track info.
+			Intent intentMusic = new Intent("cn.com.xinli.android.upnp_music_player");
+			intentMusic.putExtra("uri", uri.toString());
+			UpnpSingleton.getInstance().getApplicationContext().startService(intentMusic);
+			
+			// hide
+			getActivity().moveTaskToBack(true);
 			
 			break;
 			
 		case IMAGETYPE:
-			// Image show
-			getActivity().runOnUiThread(new Runnable(){
+			Intent intentImage = new Intent();
+			intentImage.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
+			intentImage.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+	    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intentImage);
+	    	
+	    	if (getActivity() == null){
+				Log.d(TAG, "getActivity() is null");
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				setURI(uri,metaData);
+				return;
+			} 
+	    	
+	        // recycle bitmap
+	        getActivity().runOnUiThread(new Runnable(){
+
+				@Override
+				public void run() {
+			        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
+					if (bitmapDrawable != null) {
+						Bitmap bitmap = bitmapDrawable.getBitmap();
+						if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
+					}
+				}});
+	        
+	    	getActivity().runOnUiThread(new Runnable(){
         		@Override
 				public void run() {
         			videoView.stopPlayback();
@@ -264,6 +329,7 @@ public class DefMediaPlayer extends Fragment
                 	setImage(imageView, uri.toString(), bitmapFile);
         		}
         	});
+	    	
 			break;
 		}
         
@@ -272,7 +338,7 @@ public class DefMediaPlayer extends Fragment
                 		uri.toString(),
                 		metaData,
                         new UnsignedIntegerFourBytes(1),
-                        ModelUtil.toTimeString(trackDurationTime / 1000),
+                        ModelUtil.toTimeString(0 / 1000),
                         StorageMedium.NETWORK
                 );
         currentPositionInfo = new PositionInfo(1, metaData, uri.toString());
@@ -391,13 +457,15 @@ public class DefMediaPlayer extends Fragment
 	}
 
 	public void play() {
-		Intent intent = new Intent();
-    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
-    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
-    	
+		
+		if (upnpItemType != AUDIOTYPE) {
+			Intent intent = new Intent();
+	    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
+	    	intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+	    	UpnpSingleton.getInstance().getApplicationContext().startActivity(intent);
+		}
+		
 		if (upnpItemType == VIDEOTYPE) {
-	        
 	        getActivity().runOnUiThread(new Runnable(){
 				@Override
 				public void run() {
@@ -582,27 +650,25 @@ public class DefMediaPlayer extends Fragment
 		Log.d(TAG,"videoView onprepared");
 		Log.d(TAG,"trackDurationTime = " + mp.getDuration() );
 		
-		trackDurationTime = videoView.getDuration();//this returned the duration
+		trackDurationTime = mp.getDuration();//this returned the duration
 		
 		Log.d(TAG,"trackDurationTime from videoview= " + trackDurationTime );
 		
-		synchronized (DefMediaPlayer.this) {
-            String newValue = ModelUtil.toTimeString(trackDurationTime / 1000);
-            currentMediaInfo =
-                    new MediaInfo(
-                            currentMediaInfo.getCurrentURI(),
-                            "",
-                            new UnsignedIntegerFourBytes(1),
-                            newValue,
-                            StorageMedium.NETWORK
-                    );
+        String newValue = ModelUtil.toTimeString(trackDurationTime / 1000);
+        currentMediaInfo =
+                new MediaInfo(
+                        currentMediaInfo.getCurrentURI(),
+                        "",
+                        new UnsignedIntegerFourBytes(1),
+                        newValue,
+                        StorageMedium.NETWORK
+                );
 
-            getAvTransportLastChange().setEventedValue(
-                    getInstanceId(),
-                    new AVTransportVariable.CurrentTrackDuration(newValue),
-                    new AVTransportVariable.CurrentMediaDuration(newValue)
-            );
-        }
+        getAvTransportLastChange().setEventedValue(
+                getInstanceId(),
+                new AVTransportVariable.CurrentTrackDuration(newValue),
+                new AVTransportVariable.CurrentMediaDuration(newValue)
+        );
 	}
 	
 	private Interpolator accelerator = new AccelerateInterpolator();
