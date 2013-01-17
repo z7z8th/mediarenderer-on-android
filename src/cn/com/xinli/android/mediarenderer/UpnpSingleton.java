@@ -44,6 +44,7 @@ import cn.com.xinli.android.mediarenderer.upnp.DefAVTransportService;
 import cn.com.xinli.android.mediarenderer.upnp.DefAudioRenderingControl;
 import cn.com.xinli.android.mediarenderer.upnp.DefMediaPlayer;
 import cn.com.xinli.android.mediarenderer.upnp.DefMediaPlayers;
+import cn.com.xinli.android.mediarenderer.utils.Utils;
 
 public class UpnpSingleton {
 	
@@ -183,7 +184,7 @@ public class UpnpSingleton {
                     new DeviceIdentity(udn),
                     new UDADeviceType("MediaRenderer", 1),
                     new DeviceDetails(
-                            "MediaRenderer on " + ModelUtil.getLocalHostName(false),
+                            "Xinli MediaRenderer : " + Utils.getIPAddress(true),
                             new ManufacturerDetails("Xinli", "http://www.xinli.com.cn/"),
                             new ModelDetails("Xinli MediaRenderer", "MediaRenderer on Android", "1", "http://www.xinli.com.cn/android/mediarenderer/")
                     ),

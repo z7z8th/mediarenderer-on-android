@@ -43,7 +43,7 @@ public class UpnpApp extends Application {
 	public void showNotification(String content) {
         // In this sample, we'll use the same text for the ticker and the
         // expanded notification
-        CharSequence text = getText(R.string.service_start);
+//        CharSequence text = getText(R.string.service_start);
 
         // Set the icon, scrolling text and timestamp
         // Notification notification = new Notification(R.drawable.stat_sample,
@@ -55,7 +55,7 @@ public class UpnpApp extends Application {
                         new Intent(this.getApplicationContext(), StartupActivity.class), 0);
 
         Notification notification = new NotificationCompat.Builder(this)
-                        .setContentTitle(getText(R.string.mediarenderer_title) + "(" + Utils.getIPAddress(true) + ")")
+                        .setContentTitle(getText(R.string.mediarenderer_title))
                         .setContentText(content)
                         .setTicker(
                                         this.getResources().getQuantityString(
@@ -67,7 +67,8 @@ public class UpnpApp extends Application {
                                         NOTIFICATION_LED_OFF_MS)
                         .setSmallIcon(R.drawable.mediarenderer)
                         .setContentIntent(contentIntent)
-                        .getNotification();
+                        .build();
+//                        .getNotification();
         
         CancelNotification();
 

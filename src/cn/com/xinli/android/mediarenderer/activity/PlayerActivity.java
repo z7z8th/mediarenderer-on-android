@@ -71,20 +71,9 @@ public class PlayerActivity extends FragmentActivity {
 	}
 
 	@Override
-	protected void onPostCreate(Bundle savedInstanceState) {
-		super.onPostCreate(savedInstanceState);
-
-		// Trigger the initial hide() shortly after the activity has been
-		// created, to briefly hint to the user that UI controls
-		// are available.
-		
-//		delayedHide(100); 
-		
-	}
-
-	@Override
 	public void onBackPressed() {
-		// clear videoView and imageView firstly
+		
+		/*// clear videoView and imageView firstly
 		UpnpSingleton.getInstance().getMediaPlayers().get(new UnsignedIntegerFourBytes(0)).stop();
 		
 		// recycle bitmap
@@ -94,8 +83,10 @@ public class PlayerActivity extends FragmentActivity {
 			Bitmap bitmap = bitmapDrawable.getBitmap();
 			if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
 		}
+				
+		moveTaskToBack(true);*/
 		
-		moveTaskToBack(true);
+		finish();
 	}
 	
 	@Override

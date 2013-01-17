@@ -38,8 +38,8 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnErrorListener;
 import android.media.MediaPlayer.OnPreparedListener;
-import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -97,7 +97,7 @@ public class DefMediaPlayer extends Fragment
     private static int upnpItemType = 0;
     private static String upnpItemId = "temp.jpg";
     
-    File cacheDir;
+    private File cacheDir;
     
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -202,6 +202,8 @@ public class DefMediaPlayer extends Fragment
     }
 
     synchronized public void setURI(final URI uri, final String metaData) {
+    	
+    	transportStateChanged(TransportState.STOPPED);
 
     	// DIDL fragment parsing and handling of currentURIMetaData
     	DIDLParser parser = new DIDLParser();
@@ -245,18 +247,6 @@ public class DefMediaPlayer extends Fragment
 				setURI(uri,metaData);
 				return;
 			} 
-	    	
-	        // recycle bitmap
-	        getActivity().runOnUiThread(new Runnable(){
-
-				@Override
-				public void run() {
-			        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
-					if (bitmapDrawable != null) {
-						Bitmap bitmap = bitmapDrawable.getBitmap();
-						if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
-					}
-				}});
 	    	
 	    	getActivity().runOnUiThread(new Runnable(){
 
@@ -304,18 +294,6 @@ public class DefMediaPlayer extends Fragment
 				return;
 			} 
 	    	
-	        // recycle bitmap
-	        getActivity().runOnUiThread(new Runnable(){
-
-				@Override
-				public void run() {
-			        BitmapDrawable bitmapDrawable = (BitmapDrawable) imageView.getDrawable();
-					if (bitmapDrawable != null) {
-						Bitmap bitmap = bitmapDrawable.getBitmap();
-						if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
-					}
-				}});
-	        
 	    	getActivity().runOnUiThread(new Runnable(){
         		@Override
 				public void run() {
@@ -326,7 +304,7 @@ public class DefMediaPlayer extends Fragment
                 	File bitmapFile = new File(cacheDir, upnpItemId);
                 	Log.d(TAG,"upnpItemId = " + upnpItemId );
                 	Log.d(TAG,"bitmapFile = " + bitmapFile.toString() );
-                	setImage(imageView, uri.toString(), bitmapFile);
+                	setImage(uri.toString(), bitmapFile);
         		}
         	});
 	    	
@@ -515,128 +493,8 @@ public class DefMediaPlayer extends Fragment
 		transportStateChanged(TransportState.STOPPED);
 	}
 
-	private void setImage(ImageView view, String url, File bitmapFile) {
-    	class IntializeViewImageTask extends AsyncTask<Object, Void, Bitmap> {
-
-            private ImageView view;
-            private String url;
-            private File bitmapFile;
-            
-            /**
-             * Loads a bitmap from the specified url.
-             * 
-             * @param url The location of the bitmap asset
-             * @return The bitmap, or null if it could not be loaded
-             * @throws IOException
-             * @throws MalformedURLException
-             */
-            public Bitmap getBitmap(final String string, Object fileObj) throws MalformedURLException, IOException {
-            	
-                File file = (File)fileObj;        
-                // Get the source image's dimensions
-                int desiredWidth = 1000;
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-
-                if (file != null && file.isFile()) {
-                	BitmapFactory.decodeFile(file.getAbsolutePath(), options);
-                } else {
-                	InputStream is = (InputStream) new URL(string).getContent();
-                    BitmapFactory.decodeStream(is, null, options);
-                    is.close();
-                }
-                int srcWidth = options.outWidth;
-                int srcHeight = options.outHeight;
-
-                // Only scale if the source is big enough. This code is just trying
-                // to fit a image into a certain width.
-                if (desiredWidth > srcWidth)
-                    desiredWidth = srcWidth;
-
-                // Calculate the correct inSampleSize/scale value. This helps reduce
-                // memory use. It should be a power of 2
-                int inSampleSize = 1;
-                while (srcWidth / 2 > desiredWidth) {
-                    srcWidth /= 2;
-                    srcHeight /= 2;
-                    inSampleSize *= 2;
-                }
-                // Decode with inSampleSize
-                options.inJustDecodeBounds = false;
-                options.inDither = false;
-                options.inSampleSize = inSampleSize;
-                options.inScaled = false;
-                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-                options.inPurgeable = true;
-                Bitmap sampledSrcBitmap;
-                if (file != null && file.isFile()) {
-                	sampledSrcBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
-                } else {
-                    InputStream is = (InputStream) new URL(string).getContent();
-                    sampledSrcBitmap = BitmapFactory.decodeStream(is, null, options);
-                    is.close();
-                }
-                return sampledSrcBitmap;
-            }
-
-           @Override
-            protected Bitmap doInBackground(Object... params) {
-                view = (ImageView) params[0];
-                url = String.valueOf(params[1]);
-                bitmapFile = (File) params[2];
-                
-                try {
-					return getBitmap(url,bitmapFile);
-				} catch (MalformedURLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-                return null;
-            }
-
-            @Override
-            protected void onProgressUpdate(Void... values) {
-                super.onProgressUpdate(values);
-                
-            }
-
-            @Override
-            protected void onPostExecute(final Bitmap result) {
-            	super.onPostExecute(result);
-            	final ImageView view = (ImageView) getActivity().findViewById(R.id.myimageview);
-            	
-            	ObjectAnimator visToInvis = ObjectAnimator.ofFloat(view, "rotationY", 0f, 90f);
-                visToInvis.setDuration(1000);
-                visToInvis.setInterpolator(decelerator);
-                
-                final ObjectAnimator invisToVis = ObjectAnimator.ofFloat(imageView, "rotationY", -90f, 0f);
-                invisToVis.setDuration(1000);
-                invisToVis.setInterpolator(decelerator);
-                
-                visToInvis.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator anim) {
-                    	view.setImageBitmap(result);
-                        view.setVisibility(View.VISIBLE);
-                        view.bringToFront();
-                        view.requestFocus();
-                        invisToVis.start();
-                    }
-                });
-                visToInvis.start();
-                
-//                view.setImageBitmap(result);
-//                view.setVisibility(View.VISIBLE);
-//                view.bringToFront();
-//                view.requestFocus();
-            	
-            }
-        }
-
-        new IntializeViewImageTask().execute(view, url, bitmapFile);
+	private void setImage(String url, File bitmapFile) {
+		new IntializeViewImageTask().execute(url, bitmapFile);
     }
 
 	@Override
@@ -673,5 +531,134 @@ public class DefMediaPlayer extends Fragment
 	
 	private Interpolator accelerator = new AccelerateInterpolator();
     private Interpolator decelerator = new DecelerateInterpolator();
+    
+    class IntializeViewImageTask extends AsyncTask<Object, Void, Bitmap> {
+
+        private String url;
+        private File bitmapFile;
+        
+        /**
+         * Loads a bitmap from the specified url.
+         * 
+         * @param url The location of the bitmap asset
+         * @return The bitmap, or null if it could not be loaded
+         * @throws IOException
+         * @throws MalformedURLException
+         */
+        public Bitmap getBitmap(final String string, Object fileObj) throws MalformedURLException, IOException {
+        	
+            File file = (File)fileObj;        
+            // Get the source image's dimensions
+            int desiredWidth = 1000;
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+
+            if (file != null && file.isFile()) {
+            	BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+            } else {
+            	InputStream is = (InputStream) new URL(string).getContent();
+                BitmapFactory.decodeStream(is, null, options);
+                is.close();
+            }
+            int srcWidth = options.outWidth;
+            int srcHeight = options.outHeight;
+
+            // Only scale if the source is big enough. This code is just trying
+            // to fit a image into a certain width.
+            if (desiredWidth > srcWidth)
+                desiredWidth = srcWidth;
+
+            // Calculate the correct inSampleSize/scale value. This helps reduce
+            // memory use. It should be a power of 2
+            int inSampleSize = 1;
+            while (srcWidth / 2 > desiredWidth) {
+                srcWidth /= 2;
+                srcHeight /= 2;
+                inSampleSize *= 2;
+            }
+            // Decode with inSampleSize
+            options.inJustDecodeBounds = false;
+            options.inDither = false;
+            options.inSampleSize = inSampleSize;
+            options.inScaled = false;
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            options.inPurgeable = true;
+            Bitmap sampledSrcBitmap;
+            if (file != null && file.isFile()) {
+            	sampledSrcBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+            } else {
+                InputStream is = (InputStream) new URL(string).getContent();
+                sampledSrcBitmap = BitmapFactory.decodeStream(is, null, options);
+                is.close();
+            }
+            return sampledSrcBitmap;
+        }
+
+       @Override
+        protected Bitmap doInBackground(Object... params) {
+            url = String.valueOf(params[0]);
+            bitmapFile = (File) params[1];
+            
+            try {
+				return getBitmap(url,bitmapFile);
+			} catch (MalformedURLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+            
+        }
+
+        @Override
+        protected void onPostExecute(final Bitmap result) {
+        	super.onPostExecute(result);
+        	final ImageView view = (ImageView) getActivity().findViewById(R.id.myimageview);
+        	
+	        // recycle bitmap
+	        BitmapDrawable bitmapDrawable = (BitmapDrawable) view.getDrawable();
+			if (bitmapDrawable != null) {
+				Bitmap bitmap = bitmapDrawable.getBitmap();
+				if (bitmap != null && !bitmap.isRecycled())	bitmap.recycle();
+			}
+			
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+				
+				
+            	ObjectAnimator visToInvis = ObjectAnimator.ofFloat(view, "rotationY", 0f, 90f);
+                visToInvis.setDuration(1000);
+                visToInvis.setInterpolator(decelerator);
+                
+                final ObjectAnimator invisToVis = ObjectAnimator.ofFloat(imageView, "rotationY", -90f, 0f);
+                invisToVis.setDuration(1000);
+                invisToVis.setInterpolator(decelerator);
+                
+                visToInvis.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator anim) {
+                    	view.setImageBitmap(result);
+                        view.setVisibility(View.VISIBLE);
+                        view.bringToFront();
+                        view.requestFocus();
+                        invisToVis.start();
+                    }
+                });
+                visToInvis.start();
+			} else {
+                view.setImageBitmap(result);
+                view.setVisibility(View.VISIBLE);
+                view.bringToFront();
+                view.requestFocus();
+			}
+        }
+    }
 	
 }
