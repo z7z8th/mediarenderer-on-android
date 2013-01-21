@@ -35,10 +35,11 @@ public class MusicPlayerService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		
 		Uri uri = Uri.parse(intent.getStringExtra("uri"));
+		String title = intent.getStringExtra("title");
 		mPlayer = MediaPlayer.create(this, uri);
 		
 		UpnpApp application = (UpnpApp)getApplication();
-		application.showNotification("music");
+		application.showNotification(title);
 		
 		mPlayer.setOnPreparedListener(preparedListener);
 		mPlayer.setOnCompletionListener(completionListener);

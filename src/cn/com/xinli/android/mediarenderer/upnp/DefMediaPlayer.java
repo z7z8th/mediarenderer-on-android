@@ -95,7 +95,7 @@ public class DefMediaPlayer extends Fragment
     private final static int AUDIOTYPE = 1;
     private final static int IMAGETYPE = 2;
     private static int upnpItemType = 0;
-    private static String upnpItemId = "temp.jpg";
+    private static String upnpItemTitle = "temp.jpg";
     
     private File cacheDir;
     
@@ -213,7 +213,8 @@ public class DefMediaPlayer extends Fragment
 			if (items != null && items.size() > 0){
 				Item itemOne = items.get(0);
 				Res resource = itemOne.getResources().get(0);
-				upnpItemId = itemOne.getTitle();
+				upnpItemTitle = itemOne.getTitle();
+				Log.d(TAG,"upnpItemId = " + upnpItemTitle );
 				String protocolInfo = resource.getProtocolInfo().toString();
 				if (protocolInfo.startsWith(videoTypePrefix))
 					upnpItemType = VIDEOTYPE;
@@ -270,6 +271,7 @@ public class DefMediaPlayer extends Fragment
 			// when play completed,change the content to "service is on" rather than track info.
 			Intent intentMusic = new Intent("cn.com.xinli.android.upnp_music_player");
 			intentMusic.putExtra("uri", uri.toString());
+			intentMusic.putExtra("title", upnpItemTitle);
 			UpnpSingleton.getInstance().getApplicationContext().startService(intentMusic);
 			
 			// hide
@@ -301,8 +303,7 @@ public class DefMediaPlayer extends Fragment
         			videoView.setVisibility(View.INVISIBLE);
                 	imageView.setVisibility(View.VISIBLE);
                 	imageView.bringToFront();
-                	File bitmapFile = new File(cacheDir, upnpItemId);
-                	Log.d(TAG,"upnpItemId = " + upnpItemId );
+                	File bitmapFile = new File(cacheDir, upnpItemTitle);
                 	Log.d(TAG,"bitmapFile = " + bitmapFile.toString() );
                 	setImage(uri.toString(), bitmapFile);
         		}
