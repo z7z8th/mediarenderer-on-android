@@ -264,7 +264,7 @@ public class DefAVTransportService extends AbstractAVTransportService {
             }
         } else if (!arg1.startsWith("file:")) {
             throw new AVTransportException(
-                    ErrorCode.INVALID_ARGS, "Only HTTP and file: resource identifiers are supported"
+                    ErrorCode.INVALID_ARGS, "Only HTTP and file resource identifiers are supported"
             );
         }
 

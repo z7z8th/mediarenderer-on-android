@@ -33,8 +33,10 @@ public class MusicPlayerService extends Service {
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		
-		Uri uri = Uri.parse(intent.getStringExtra("uri"));
+		if(intent == null) return -1;
+		String s= intent.getStringExtra("uri");
+		if(s == null) return -1;
+		Uri uri = Uri.parse(s);
 		String title = intent.getStringExtra("title");
 		mPlayer = MediaPlayer.create(this, uri);
 		

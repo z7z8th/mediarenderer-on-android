@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.fourthline.cling.model.ModelUtil;
 import org.fourthline.cling.model.types.UnsignedIntegerFourBytes;
+import org.fourthline.cling.support.avtransport.AVTransportErrorCode;
+import org.fourthline.cling.support.avtransport.AVTransportException;
 import org.fourthline.cling.support.avtransport.lastchange.AVTransportVariable;
 import org.fourthline.cling.support.contentdirectory.DIDLParser;
 import org.fourthline.cling.support.lastchange.LastChange;
@@ -91,9 +93,9 @@ public class DefMediaPlayer extends Fragment
     private final static String videoTypePrefix = "http-get:*:video/";
     private final static String audioTypePrefix = "http-get:*:audio/";
     private final static String imageTypePrefix = "http-get:*:image/";
-    private final static int VIDEOTYPE = 0;
-    private final static int AUDIOTYPE = 1;
-    private final static int IMAGETYPE = 2;
+    private final static int VIDEOTYPE = 1;
+    private final static int AUDIOTYPE = 2;
+    private final static int IMAGETYPE = 3;
     private static int upnpItemType = 0;
     private static String upnpItemTitle = "temp.jpg";
     
@@ -201,14 +203,16 @@ public class DefMediaPlayer extends Fragment
     	return mVolume;
     }
 
-    synchronized public void setURI(final URI uri, final String metaData) {
+    synchronized public void setURI(final URI uri, final String metaData)
+			throws AVTransportException
+	{
     	
     	transportStateChanged(TransportState.STOPPED);
 
     	// DIDL fragment parsing and handling of currentURIMetaData
     	DIDLParser parser = new DIDLParser();
         try {
-			DIDLContent didl =parser.parse(metaData);
+			DIDLContent didl = parser.parse(metaData);
 			List<Item> items = didl.getItems();
 			if (items != null && items.size() > 0){
 				Item itemOne = items.get(0);
@@ -216,12 +220,15 @@ public class DefMediaPlayer extends Fragment
 				upnpItemTitle = itemOne.getTitle();
 				Log.d(TAG,"upnpItemId = " + upnpItemTitle );
 				String protocolInfo = resource.getProtocolInfo().toString();
-				if (protocolInfo.startsWith(videoTypePrefix))
+				/*if (protocolInfo.startsWith(videoTypePrefix))
 					upnpItemType = VIDEOTYPE;
-				else if(protocolInfo.startsWith(audioTypePrefix))
+				else
+				*/
+				if(protocolInfo.startsWith(audioTypePrefix))
 					upnpItemType = AUDIOTYPE;
-				else if (protocolInfo.startsWith(imageTypePrefix))
+				/* else if (protocolInfo.startsWith(imageTypePrefix))
 					upnpItemType = IMAGETYPE;
+				*/
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -232,6 +239,7 @@ public class DefMediaPlayer extends Fragment
         UpnpSingleton.getInstance().getApplicationContext().stopService(new Intent("cn.com.xinli.android.upnp_music_player"));
         
         switch (upnpItemType) {
+        /*
 		case VIDEOTYPE:
 			Intent intent = new Intent();
 	    	intent.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
@@ -264,7 +272,7 @@ public class DefMediaPlayer extends Fragment
 				}});
 	    	
 			break;
-
+		*/
 		case AUDIOTYPE:
 			// in order to play music in background,we need to start music play service
 			// and show track info in notification.
@@ -278,7 +286,7 @@ public class DefMediaPlayer extends Fragment
 			getActivity().moveTaskToBack(true);
 			
 			break;
-			
+		/*
 		case IMAGETYPE:
 			Intent intentImage = new Intent();
 			intentImage.setClassName(PACKAGE_NAME, ACTIVITY_NAME);
@@ -310,6 +318,13 @@ public class DefMediaPlayer extends Fragment
         	});
 	    	
 			break;
+			*/
+			default:
+				transportStateChanged(TransportState.STOPPED);
+				throw new AVTransportException(
+						AVTransportErrorCode.PLAYBACK_FORMAT_NOT_SUPPORTED,
+						"Playback format not supported!"
+				);
 		}
         
     	currentMediaInfo =
